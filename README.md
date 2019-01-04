@@ -1,5 +1,6 @@
 # Subtask
 
+Task management for any size project with an emphasis on breaking complex work into simple atomic tasks.
 This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 7.1.4.
 
 ## Development server
