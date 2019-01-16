@@ -1,6 +1,8 @@
 import { Component, OnInit, AfterViewInit } from '@angular/core';
 import { Task } from '../task';
+import { TaskRelationship } from '../task-relationship';
 import { TaskService } from '../task.service';
+import { TaskRelationshipsService } from '../task-relationships.service';
 import * as vis from "vis";
 
 @Component({
@@ -12,44 +14,98 @@ import * as vis from "vis";
 export class TasksComponent implements OnInit {
 
   tasks: Task[];
+  relationships: TaskRelationship[];
 
-  constructor(private taskService: TaskService) { }
+  constructor(private taskService: TaskService, private taskRelationshipService: TaskRelationshipsService) { }
 
   ngOnInit() {
     this.getTasks();
   }
 
   getTasks(): void {
-    this.taskService.getTasks().subscribe(tasks => {
-      this.tasks = tasks
-      // create an array with edges
-      var edges = new vis.DataSet([
-        { from: 1, to: 3 },
-        { from: 1, to: 2 },
-        { from: 2, to: 4 },
-        { from: 2, to: 5 }
-      ]);
 
+    //start both async calls
+    var taskPromise = this.taskService.getTasks();
+    var edgePromise = this.taskRelationshipService.getTaskRelationships();
+
+    taskPromise.subscribe(tasks => {
+      //we know tasks exist, so start with them
+      this.tasks = tasks
       var nodes = new vis.DataSet();
       for (var i = 0; i < this.tasks.length; i++) {
-        nodes.add({ id: i, label: this.tasks[i].title });
+        nodes.add({ id: this.tasks[i].id, label: this.tasks[i].title });
       }
 
-      // provide the data in the vis format
-      var data = {
-        nodes: nodes,
-        edges: edges
-      };
+      //then work on relationships
+      edgePromise.subscribe(relationships => {
+        this.relationships = relationships
+        // create an array with edges
+        var edges = new vis.DataSet();
+        for (var i = 0; i < this.relationships.length; i++) {
+          edges.add(this.handleEdgeLogic(this.relationships[i]));
+        }
 
-      // create a network
-      var container = document.getElementById('mynetwork');
-      var options = {};
+        // provide the data in the vis format
+        var data = {
+          nodes: nodes,
+          edges: edges
+        };
 
-      // initialize your network!
-      var network = new vis.Network(container, data, options);
+        console.log(nodes);
+        console.log(edges);
+        // create a network
+        var container = document.getElementById('mynetwork');
+        var options = {
+          layout:
+          {
+            hierarchical:
+            {
+              direction: 'UD',
+              sortMethod: 'directed'
+            }
+          },
+          edges:
+            { arrows: 'to' }
+        };
+
+        // initialize your network!
+        var network = new vis.Network(container, data, options);
+      })
+
+
 
     }
     );
+  }
+  handleEdgeLogic(taskRel: TaskRelationship): any {
+    switch (taskRel.relationshipType) {
+      case 'owns':
+        return {
+          from: taskRel.subjectTask, to: taskRel.objectTask
+        
+        };
+
+      case 'requires':
+        return {
+          from: taskRel.subjectTask, to: taskRel.objectTask,
+          arrows:
+            {arrows: 'from'},
+            title: 'blocking',
+            color:
+              { color: '#ff0000' }
+          
+        };
+
+      case 'substitutes':
+        return {
+          from: taskRel.subjectTask, to: taskRel.objectTask,
+          color:
+              {color: 'yellow'}
+          
+        };
+
+    }
+
   }
 
 }
