@@ -63,9 +63,7 @@ export class TasksComponent implements OnInit {
               direction: 'UD',
               sortMethod: 'directed'
             }
-          },
-          edges:
-            { arrows: 'to' }
+          }
         };
 
         // initialize your network!
@@ -77,35 +75,33 @@ export class TasksComponent implements OnInit {
     }
     );
   }
+
   handleEdgeLogic(taskRel: TaskRelationship): any {
     switch (taskRel.relationshipType) {
       case 'owns':
         return {
-          from: taskRel.subjectTask, to: taskRel.objectTask
-        
+          from: taskRel.subjectTask, to: taskRel.objectTask,
+          arrows:
+            { to: true },
+          smooth: {enabled:true, type:'curvedCW', roundness:0.2}
         };
-
       case 'requires':
         return {
           from: taskRel.subjectTask, to: taskRel.objectTask,
           arrows:
-            {arrows: 'from'},
-            title: 'blocking',
-            color:
-              { color: '#ff0000' }
-          
-        };
-
+            { to: true },
+          color:
+            { color: '#ff0000' },
+            smooth: {enabled:true, type:'curvedCW', roundness:0.2}
+          };
       case 'substitutes':
         return {
           from: taskRel.subjectTask, to: taskRel.objectTask,
           color:
-              {color: 'yellow'}
-          
+            { color: 'black' },
+          dashes: true,
+          smooth: {enabled:true, type:'curvedCW', roundness:0.2}
         };
-
     }
-
   }
-
 }
